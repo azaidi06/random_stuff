@@ -188,6 +188,79 @@
   .mrr{margin-top:14px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
   .mrr b{color:var(--ink);font-weight:500}
 
+  /* Funding stage bands on slider */
+  .stage-bands{
+    position:relative;height:6px;margin-top:6px;border-radius:3px;overflow:hidden;
+    display:flex;
+  }
+  .stage-band{
+    height:100%;position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stage-band-label{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.15em;
+    text-transform:uppercase;opacity:.6;
+  }
+  .stage-bands-wrap{margin-top:4px;margin-bottom:8px;position:relative;height:26px}
+
+  /* Benchmark strip */
+  .benchmarks{
+    margin:-8px 0 28px;
+    min-height:0;
+    transition:min-height .3s ease;
+  }
+  .benchmarks:has(.bench:not([style*="display: none"])){min-height:40px}
+  .bench-row{
+    display:flex;gap:12px;flex-wrap:wrap;
+  }
+  .bench{
+    display:flex;align-items:center;gap:12px;
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:10px 16px;
+    transition:opacity .3s ease, transform .3s ease;
+    flex:1 1 0;min-width:260px;max-width:380px;
+  }
+  .bench.saas{border-left:3px solid var(--accent)}
+  .bench.consumer{border-left:3px solid var(--blue)}
+  .bench.cohort{border-left:3px solid var(--pink)}
+  .bench-icon{
+    width:36px;height:36px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;
+    font-family:'JetBrains Mono',monospace;font-weight:700;
+  }
+  .bench.saas .bench-icon{background:rgba(255,138,31,.12);color:var(--accent)}
+  .bench.consumer .bench-icon{background:rgba(125,211,252,.12);color:var(--blue)}
+  .bench.cohort .bench-icon{background:rgba(240,171,252,.12);color:var(--pink)}
+  .bench-info{min-width:0;flex:1}
+  .bench-name{
+    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+    letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .bench-meta{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
+    letter-spacing:.08em;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .bench-metric{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+    text-align:right;white-space:nowrap;flex-shrink:0;
+  }
+  .bench.saas .bench-metric{color:var(--accent)}
+  .bench.consumer .bench-metric{color:var(--blue)}
+  .bench.cohort .bench-metric{color:var(--pink)}
+  .bench-stage{
+    font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);
+    text-align:right;letter-spacing:.1em;text-transform:uppercase;margin-top:1px;
+  }
+  .bench-strip-label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    margin-bottom:10px;
+    transition:opacity .3s ease;
+  }
+
   .footer{
     margin-top:44px;padding-top:24px;border-top:1px solid var(--line);
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
@@ -234,7 +307,13 @@
       <div class="slider-wrap">
         <input type="range" id="slider" min="0" max="1000" value="565" step="1">
         <div class="slider-marks" id="marks"></div>
+        <div class="stage-bands-wrap" id="stage-bands-wrap"></div>
       </div>
+    </div>
+
+    <div class="benchmarks" id="benchmarks">
+      <div class="bench-strip-label" id="bench-label">Nearby benchmarks</div>
+      <div class="bench-row" id="bench-row"></div>
     </div>
 
     <div class="grid">
@@ -325,6 +404,63 @@
   const headline = document.getElementById('headline-target');
   const delta = document.getElementById('delta');
 
+  // =========================================================
+  //  BENCHMARK DATA
+  // =========================================================
+  // Each benchmark has: name, type (saas|consumer|cohort),
+  //   mrr (monthly), mau (if known), stage, funding, context
+  const benchmarks = [
+    { name:'YC Mid-Tier Seed', type:'cohort', icon:'YC',
+      mrr:4000, mau:null,
+      stage:'Seed', funding:'~$2M @ $20M val',
+      context:'Beta-stage startups, 2024-25 batches' },
+    { name:'UserLoop', type:'saas', icon:'UL',
+      mrr:6000, mau:null,
+      stage:'Pre-Seed', funding:'Angel / Pre-Seed',
+      context:'Shopify in-app surveys · ramen profitable' },
+    { name:'YC Top-Tier Seed', type:'cohort', icon:'YC',
+      mrr:25000, mau:null,
+      stage:'Seed', funding:'$2.5-4M @ $20-25M val',
+      context:'$150K-500K ARR range, 2024-25 batches' },
+    { name:'CopyAI', type:'saas', icon:'CA',
+      mrr:45000, mau:null,
+      stage:'Seed', funding:'Seed (velocity play)',
+      context:'$0 → $45K MRR in 6 months · gen-AI wave' },
+    { name:'Hypefury', type:'saas', icon:'HF',
+      mrr:70000, mau:null,
+      stage:'Series A', funding:'Growth equity / Series A terms',
+      context:'Bootstrapped social scheduling tool' },
+    { name:'Series A Benchmark', type:'cohort', icon:'A',
+      mrr:150000, mau:null,
+      stage:'Series A', funding:'$1-2.5M ARR expected',
+      context:'2026 SaaS benchmark: $83K-210K MRR' },
+    { name:'Buffer', type:'consumer', icon:'BF',
+      mrr:2000000, mau:223000,
+      stage:'Growth', funding:'Open startup · transparent metrics',
+      context:'~$9 MRR per active user at scale' },
+    { name:'Emergent', type:'saas', icon:'EM',
+      mrr:8300000, mau:null,
+      stage:'Series B', funding:'$70M @ $300M val (2026)',
+      context:'YC S24 · AI coding · $100M ARR in 8 months' },
+  ];
+
+  // Consumer / MAU-focused stage bands
+  const mauStageBands = [
+    { label:'Pre-Seed', min:500, max:1000, color:'rgba(240,171,252,.15)' },
+    { label:'Seed', min:1000, max:10000, color:'rgba(255,138,31,.15)' },
+    { label:'Series A', min:100000, max:500000, color:'rgba(125,211,252,.15)' },
+  ];
+  // Revenue stage bands (ARR)
+  const revStageBands = [
+    { label:'Pre-Seed', min:50000, max:120000, color:'rgba(240,171,252,.15)' },
+    { label:'Seed', min:120000, max:600000, color:'rgba(255,138,31,.15)' },
+    { label:'Series A', min:1000000, max:2500000, color:'rgba(125,211,252,.15)' },
+    { label:'Series B+', min:5000000, max:10000000, color:'rgba(125,211,252,.10)' },
+  ];
+
+  // =========================================================
+  //  SLIDER MARKS
+  // =========================================================
   const revMarkVals = [
     [50000,'$50K'],[100000,'$100K'],[250000,'$250K'],
     [1000000,'$1M'],[3000000,'$3M'],[10000000,'$10M']
@@ -349,9 +485,121 @@
     });
   }
 
+  // =========================================================
+  //  FUNDING STAGE BANDS
+  // =========================================================
+  function buildStageBands(){
+    const wrap = document.getElementById('stage-bands-wrap');
+    wrap.innerHTML = '';
+    const bands = tmode==='revenue' ? revStageBands : mauStageBands;
+    const lMin = tmode==='revenue' ? logMinR : logMinU;
+    const lMax = tmode==='revenue' ? logMaxR : logMaxU;
+    const container = document.createElement('div');
+    container.style.cssText = 'position:relative;height:26px;width:100%';
+
+    bands.forEach(b => {
+      const left = Math.max(0, (Math.log10(b.min)-lMin)/(lMax-lMin)*100);
+      const right = Math.min(100, (Math.log10(b.max)-lMin)/(lMax-lMin)*100);
+      const width = right - left;
+      if(width <= 0) return;
+
+      const band = document.createElement('div');
+      band.style.cssText = `position:absolute;left:${left}%;width:${width}%;top:0;height:6px;
+        background:${b.color};border-radius:3px;`;
+
+      const label = document.createElement('div');
+      label.className = 'stage-band-label';
+      label.textContent = b.label;
+      label.style.cssText = `position:absolute;left:${left + width/2}%;top:10px;
+        transform:translateX(-50%);white-space:nowrap;
+        font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.15em;
+        text-transform:uppercase;color:var(--dim);opacity:.5`;
+
+      container.appendChild(band);
+      container.appendChild(label);
+    });
+    wrap.appendChild(container);
+  }
+
+  // =========================================================
+  //  BENCHMARK PROXIMITY RENDERING
+  // =========================================================
+  const benchRow = document.getElementById('bench-row');
+  const benchLabel = document.getElementById('bench-label');
+  const PROXIMITY = 0.45; // log-decades radius to show
+
+  function renderBenchmarks(){
+    benchRow.innerHTML = '';
+    let currentLog, items;
+
+    if(tmode==='revenue'){
+      const currentMrr = arr / 12;
+      currentLog = Math.log10(currentMrr);
+      items = benchmarks.map(b => {
+        if(!b.mrr) return null;
+        const dist = Math.abs(Math.log10(b.mrr) - currentLog);
+        if(dist > PROXIMITY) return null;
+        const opacity = 1 - (dist / PROXIMITY) * 0.7;
+        return { ...b, dist, opacity, metricLabel: fmt(b.mrr)+' MRR' };
+      }).filter(Boolean);
+    } else {
+      currentLog = Math.log10(mau);
+      // In MAU mode, show benchmarks that have MAU data by MAU proximity,
+      // plus show all benchmarks by their implied MRR proximity (mau * ~$10-25)
+      items = benchmarks.map(b => {
+        let dist;
+        if(b.mau){
+          dist = Math.abs(Math.log10(b.mau) - currentLog);
+        } else if(b.mrr){
+          // Approximate: if user has `mau` users at ~$10-20/mo, compare to benchmark MRR
+          const impliedMrr = mau * 15; // midpoint of $10-$20
+          dist = Math.abs(Math.log10(b.mrr) - Math.log10(impliedMrr));
+        } else {
+          return null;
+        }
+        if(dist > PROXIMITY) return null;
+        const opacity = 1 - (dist / PROXIMITY) * 0.7;
+        const metricLabel = b.mau
+          ? fmtUsers(b.mau)+' MAU · '+fmt(b.mrr)+' MRR'
+          : fmt(b.mrr)+' MRR';
+        return { ...b, dist, opacity, metricLabel };
+      }).filter(Boolean);
+    }
+
+    // Sort by proximity, take top 3
+    items.sort((a,b) => a.dist - b.dist);
+    items = items.slice(0, 3);
+
+    if(items.length === 0){
+      benchLabel.style.opacity = '0';
+    } else {
+      benchLabel.style.opacity = '1';
+    }
+
+    items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'bench ' + item.type;
+      el.style.opacity = item.opacity;
+      el.innerHTML = `
+        <div class="bench-icon">${item.icon}</div>
+        <div class="bench-info">
+          <div class="bench-name">${item.name}</div>
+          <div class="bench-meta">${item.context}</div>
+        </div>
+        <div>
+          <div class="bench-metric">${item.metricLabel}</div>
+          <div class="bench-stage">${item.funding}</div>
+        </div>
+      `;
+      benchRow.appendChild(el);
+    });
+  }
+
+  // =========================================================
+  //  MAIN RENDER
+  // =========================================================
   function render(){
     if(tmode==='revenue'){
-      // --- Revenue target mode (original) ---
       const mrr = arr/12;
       if(mode==='arr'){
         targetVal.textContent = fmt(arr);
@@ -385,7 +633,6 @@
       delta.textContent = (ua/uc).toFixed(1)+'× user delta · A → C';
 
     } else {
-      // --- MAU target mode ---
       targetVal.textContent = fmtUsers(mau);
       targetUnit.textContent = 'MAU';
       const mrrA = mau*10, mrrB = mau*20, mrrC = mau*25;
@@ -416,8 +663,13 @@
       const revC = mode==='arr' ? arrC : mrrC;
       delta.textContent = (revC/revA).toFixed(1)+'× revenue delta · C vs A';
     }
+
+    renderBenchmarks();
   }
 
+  // =========================================================
+  //  EVENT HANDLERS
+  // =========================================================
   slider.addEventListener('input', e=>{
     if(tmode==='revenue'){
       arr = sliderToArr(+e.target.value);
@@ -459,17 +711,18 @@
       b.classList.add('active');
       tmode = b.dataset.tmode;
       positionTargetPill();
-      // Reset slider to midpoint for new scale
       slider.value = 565;
       if(tmode==='revenue') arr = sliderToArr(565);
       else mau = sliderToMau(565);
       buildMarks();
+      buildStageBands();
       render();
     });
   });
 
   // Init
   buildMarks();
+  buildStageBands();
   window.addEventListener('load', ()=>{
     positionPill();
     positionTargetPill();
