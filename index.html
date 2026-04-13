@@ -261,6 +261,83 @@
     transition:opacity .3s ease;
   }
 
+  .bench{cursor:pointer}
+
+  /* Popover detail card */
+  .bench-popover{
+    position:fixed;z-index:1000;
+    width:420px;max-width:92vw;
+    background:#15171c;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:0;
+    pointer-events:none;
+    opacity:0;
+    transform:translateY(8px);
+    transition:opacity .2s ease, transform .2s ease;
+    box-shadow:0 24px 80px rgba(0,0,0,.6), 0 0 1px rgba(255,255,255,.08);
+    overflow:hidden;
+  }
+  .bench-popover.visible{
+    opacity:1;transform:translateY(0);pointer-events:auto;
+  }
+  .bench-popover-header{
+    padding:20px 22px 16px;
+    display:flex;align-items:center;gap:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .bench-popover-icon{
+    width:44px;height:44px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;flex-shrink:0;
+    font-family:'JetBrains Mono',monospace;font-weight:700;
+  }
+  .bench-popover.saas .bench-popover-icon{background:rgba(255,138,31,.15);color:var(--accent)}
+  .bench-popover.consumer .bench-popover-icon{background:rgba(125,211,252,.15);color:var(--blue)}
+  .bench-popover.cohort .bench-popover-icon{background:rgba(240,171,252,.15);color:var(--pink)}
+  .bench-popover-title{
+    font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;
+    letter-spacing:.02em;
+  }
+  .bench-popover-type{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:2px;
+  }
+  .bench-popover-body{padding:18px 22px 20px}
+  .bench-popover-metrics{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    margin-bottom:18px;
+  }
+  .bench-popover-metric{
+    background:rgba(255,255,255,.03);border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;
+  }
+  .bench-popover-metric-label{
+    font-family:'JetBrains Mono',monospace;font-size:9px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    margin-bottom:4px;
+  }
+  .bench-popover-metric-val{
+    font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;
+  }
+  .bench-popover.saas .bench-popover-metric-val{color:var(--accent)}
+  .bench-popover.consumer .bench-popover-metric-val{color:var(--blue)}
+  .bench-popover.cohort .bench-popover-metric-val{color:var(--pink)}
+  .bench-popover-context{
+    font-size:13px;line-height:1.6;color:var(--muted);
+    margin-bottom:16px;
+  }
+  .bench-popover-footer{
+    display:flex;gap:10px;flex-wrap:wrap;
+  }
+  .bench-popover-tag{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;
+    padding:5px 12px;border-radius:999px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);
+    color:var(--muted);
+  }
+
   .footer{
     margin-top:44px;padding-top:24px;border-top:1px solid var(--line);
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
@@ -315,6 +392,8 @@
       <div class="bench-strip-label" id="bench-label">Nearby benchmarks</div>
       <div class="bench-row" id="bench-row"></div>
     </div>
+
+    <div class="bench-popover" id="bench-popover"></div>
 
     <div class="grid">
       <div class="card a">
@@ -413,35 +492,43 @@
     { name:'YC Mid-Tier Seed', type:'cohort', icon:'YC',
       mrr:4000, mau:null,
       stage:'Seed', funding:'~$2M @ $20M val',
-      context:'Beta-stage startups, 2024-25 batches' },
+      context:'Beta-stage startups, 2024-25 batches',
+      detail:'Startups with $3K\u2013$5K MRR\u2014often still in beta or pilot\u2014were successfully raising ~$2M at $18\u2013$22M valuations from recent YC batches. Proves you don\u2019t need massive revenue to raise a Seed round, provided the product and market are highly compelling.' },
     { name:'UserLoop', type:'saas', icon:'UL',
       mrr:6000, mau:null,
       stage:'Pre-Seed', funding:'Angel / Pre-Seed',
-      context:'Shopify in-app surveys · ramen profitable' },
+      context:'Shopify in-app surveys \u00b7 ramen profitable',
+      detail:'Building in-app surveys for Shopify apps, UserLoop hit $6K MRR\u2014the classic \u201cramen profitability\u201d threshold. This is the exact baseline MRR needed to prove product-market fit to angel investors or a pre-seed fund.' },
     { name:'YC Top-Tier Seed', type:'cohort', icon:'YC',
       mrr:25000, mau:null,
-      stage:'Seed', funding:'$2.5-4M @ $20-25M val',
-      context:'$150K-500K ARR range, 2024-25 batches' },
+      stage:'Seed', funding:'$2.5\u20134M @ $20\u201325M val',
+      context:'$150K\u2013$500K ARR range, 2024-25 batches',
+      detail:'Based on recent VC analysis of YC batches, companies hitting $12.5K\u2013$41.6K MRR ($150K\u2013$500K ARR) were reliably raising $2.5M\u2013$4M in Seed rounds at $20M\u2013$25M post-money valuations.' },
     { name:'CopyAI', type:'saas', icon:'CA',
       mrr:45000, mau:null,
       stage:'Seed', funding:'Seed (velocity play)',
-      context:'$0 → $45K MRR in 6 months · gen-AI wave' },
+      context:'$0 \u2192 $45K MRR in 6 months \u00b7 gen-AI wave',
+      detail:'Capitalizing early on the generative AI boom, CopyAI reached $45K MRR within its first 6 months. This level of velocity ($0 to $45K MRR in half a year) is a golden ticket for early-stage funding and validation.' },
     { name:'Hypefury', type:'saas', icon:'HF',
       mrr:70000, mau:null,
       stage:'Series A', funding:'Growth equity / Series A terms',
-      context:'Bootstrapped social scheduling tool' },
+      context:'Bootstrapped social scheduling tool',
+      detail:'A social media scheduling tool that bootstrapped its way up. Hitting $70K MRR is the exact threshold where a startup can comfortably demand highly favorable terms from growth equity or Series A investors.' },
     { name:'Series A Benchmark', type:'cohort', icon:'A',
       mrr:150000, mau:null,
-      stage:'Series A', funding:'$1-2.5M ARR expected',
-      context:'2026 SaaS benchmark: $83K-210K MRR' },
+      stage:'Series A', funding:'$1\u20132.5M ARR expected',
+      context:'2026 SaaS benchmark: $83K\u2013$210K MRR',
+      detail:'In the 2026 B2B/SaaS funding environment, Series A expectations sit tightly between $83K\u2013$210K MRR ($1M\u2013$2.5M ARR). Investors care less about total user count and more about what users are paying.' },
     { name:'Buffer', type:'consumer', icon:'BF',
       mrr:2000000, mau:223000,
-      stage:'Growth', funding:'Open startup · transparent metrics',
-      context:'~$9 MRR per active user at scale' },
+      stage:'Growth', funding:'Open startup \u00b7 transparent metrics',
+      context:'~$9 MRR per active user at scale',
+      detail:'The gold standard for transparent metrics\u2014Buffer publishes live revenue and user counts continuously. Currently at $2M MRR with ~223K MAUs, yielding roughly $9 in MRR per active user. A fantastic benchmark for understanding the ratio between active users and recurring revenue at scale.' },
     { name:'Emergent', type:'saas', icon:'EM',
       mrr:8300000, mau:null,
       stage:'Series B', funding:'$70M @ $300M val (2026)',
-      context:'YC S24 · AI coding · $100M ARR in 8 months' },
+      context:'YC S24 \u00b7 AI coding \u00b7 $100M ARR in 8 months',
+      detail:'Part of YC\u2019s Summer 2024 cohort, this AI coding startup reached a $100M annualized run rate (~$8.3M MRR) just 8 months after launch. Raised a $70M Series B at a $300M valuation in early 2026\u2014a prime example of the exponential hyper-growth currently commanding massive rounds.' },
   ];
 
   // Consumer / MAU-focused stage bands
@@ -591,6 +678,10 @@
           <div class="bench-stage">${item.funding}</div>
         </div>
       `;
+      // Store data for popover
+      el._benchData = item;
+      el.addEventListener('mouseenter', showPopover);
+      el.addEventListener('mouseleave', hidePopover);
       benchRow.appendChild(el);
     });
   }
@@ -719,6 +810,96 @@
       render();
     });
   });
+
+  // =========================================================
+  //  POPOVER
+  // =========================================================
+  const popover = document.getElementById('bench-popover');
+  let popoverTimeout;
+
+  function showPopover(e){
+    clearTimeout(popoverTimeout);
+    const bench = e.currentTarget;
+    const d = bench._benchData;
+    if(!d) return;
+
+    const typeLabel = {saas:'B2B / SaaS', consumer:'Consumer', cohort:'Cohort Data'}[d.type]||d.type;
+
+    // Build metrics grid
+    let metricsHtml = '';
+    metricsHtml += `<div class="bench-popover-metric">
+      <div class="bench-popover-metric-label">MRR</div>
+      <div class="bench-popover-metric-val">${fmt(d.mrr)}</div>
+    </div>`;
+    metricsHtml += `<div class="bench-popover-metric">
+      <div class="bench-popover-metric-label">ARR</div>
+      <div class="bench-popover-metric-val">${fmt(d.mrr*12)}</div>
+    </div>`;
+    if(d.mau){
+      metricsHtml += `<div class="bench-popover-metric">
+        <div class="bench-popover-metric-label">MAU</div>
+        <div class="bench-popover-metric-val">${fmtUsers(d.mau)}</div>
+      </div>`;
+      metricsHtml += `<div class="bench-popover-metric">
+        <div class="bench-popover-metric-label">Rev / User</div>
+        <div class="bench-popover-metric-val">${fmt(d.mrr/d.mau)}/mo</div>
+      </div>`;
+    }
+
+    popover.className = 'bench-popover ' + d.type;
+    popover.innerHTML = `
+      <div class="bench-popover-header">
+        <div class="bench-popover-icon">${d.icon}</div>
+        <div>
+          <div class="bench-popover-title">${d.name}</div>
+          <div class="bench-popover-type">${typeLabel}</div>
+        </div>
+      </div>
+      <div class="bench-popover-body">
+        <div class="bench-popover-metrics">${metricsHtml}</div>
+        <div class="bench-popover-context">${d.detail || d.context}</div>
+        <div class="bench-popover-footer">
+          <span class="bench-popover-tag">${d.stage}</span>
+          <span class="bench-popover-tag">${d.funding}</span>
+        </div>
+      </div>
+    `;
+
+    // Position: above the bench chip, centered horizontally
+    const rect = bench.getBoundingClientRect();
+    popover.style.visibility = 'hidden';
+    popover.classList.add('visible');
+
+    requestAnimationFrame(()=>{
+      const pw = popover.offsetWidth;
+      const ph = popover.offsetHeight;
+
+      let left = rect.left + rect.width/2 - pw/2;
+      let top = rect.top - ph - 10;
+
+      // If it would go above viewport, show below instead
+      if(top < 8){
+        top = rect.bottom + 10;
+      }
+      // Keep within horizontal bounds
+      if(left < 8) left = 8;
+      if(left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+
+      popover.style.left = left + 'px';
+      popover.style.top = top + 'px';
+      popover.style.visibility = '';
+    });
+  }
+
+  function hidePopover(){
+    popoverTimeout = setTimeout(()=>{
+      popover.classList.remove('visible');
+    }, 120);
+  }
+
+  // Keep popover open if mouse moves onto it
+  popover.addEventListener('mouseenter', ()=> clearTimeout(popoverTimeout));
+  popover.addEventListener('mouseleave', ()=> hidePopover());
 
   // Init
   buildMarks();
