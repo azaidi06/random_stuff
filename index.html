@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paths to Revenue · Interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0d;
+    --panel:#111317;
+    --line:#1e222b;
+    --ink:#f4f5f7;
+    --muted:#7a8392;
+    --dim:#4a5260;
+    --accent:#ff8a1f;
+    --blue:#7dd3fc;
+    --pink:#f0abfc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+  body{
+    min-height:100vh;padding:48px 32px 64px;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(255,138,31,.08), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(125,211,252,.06), transparent 60%),
+      var(--bg);
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:18px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .eyebrow::before{content:"";width:28px;height:1px;background:var(--accent)}
+  h1{
+    font-weight:900;font-size:clamp(36px,6vw,68px);
+    letter-spacing:-.03em;line-height:.98;margin-bottom:14px;
+  }
+  h1 .big{color:var(--accent);font-style:italic}
+  .sub{color:var(--muted);font-size:15px;max-width:640px;line-height:1.55}
+
+  /* Control panel */
+  .controls{
+    margin:40px 0 36px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:26px 28px;
+  }
+  .controls-row{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:24px;flex-wrap:wrap;margin-bottom:22px;
+  }
+  .ctrl-label{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  }
+
+  /* Toggle */
+  .toggle{
+    display:inline-flex;background:#0a0b0d;border:1px solid var(--line);
+    border-radius:999px;padding:4px;position:relative;
+  }
+  .toggle button{
+    background:transparent;border:0;color:var(--muted);
+    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;
+    letter-spacing:.12em;text-transform:uppercase;
+    padding:10px 22px;border-radius:999px;cursor:pointer;
+    transition:color .25s ease;position:relative;z-index:2;
+  }
+  .toggle button.active{color:#0a0b0d}
+  .toggle .pill{
+    position:absolute;top:4px;bottom:4px;
+    background:var(--accent);border-radius:999px;
+    transition:left .35s cubic-bezier(.5,.05,.2,1), width .35s cubic-bezier(.5,.05,.2,1);
+    z-index:1;
+  }
+
+  /* Target display + slider */
+  .target-display{
+    display:flex;align-items:baseline;gap:14px;margin:6px 0 14px;
+  }
+  .target-val{
+    font-family:'JetBrains Mono',monospace;font-weight:700;
+    font-size:clamp(32px,4.5vw,48px);color:var(--accent);
+    letter-spacing:-.02em;
+  }
+  .target-unit{
+    font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);
+    letter-spacing:.15em;text-transform:uppercase;
+  }
+  .equiv{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);
+  }
+  .equiv b{color:var(--muted);font-weight:500}
+
+  .slider-wrap{margin-top:18px}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:4px;background:var(--line);border-radius:999px;outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--accent), 0 0 20px rgba(255,138,31,.4);
+    transition:transform .15s ease;
+  }
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+  input[type=range]::-moz-range-thumb{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--accent);
+  }
+  .slider-marks{
+    position:relative;height:16px;margin-top:10px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);
+    letter-spacing:.1em;
+  }
+  .slider-marks span{
+    position:absolute;transform:translateX(-50%);
+  }
+  .slider-marks span:first-child{transform:translateX(0)}
+  .slider-marks span:last-child{transform:translateX(-100%)}
+
+  /* Cards */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media (max-width:860px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    position:relative;background:var(--panel);
+    border:1px solid var(--line);border-radius:20px;
+    padding:28px 26px 26px;overflow:hidden;
+    transition:transform .3s ease, border-color .3s ease;
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(600px 200px at 100% 0%, var(--glow), transparent 60%);
+    opacity:.5;pointer-events:none;
+  }
+  .card:hover{transform:translateY(-4px);border-color:var(--accent)}
+  .card.a{--glow:rgba(255,138,31,.18)}
+  .card.b{--glow:rgba(125,211,252,.15)}
+  .card.c{--glow:rgba(240,171,252,.15)}
+
+  .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:20px;
+    display:flex;justify-content:space-between;
+  }
+  .a .tag .name{color:var(--accent)}
+  .b .tag .name{color:var(--blue)}
+  .c .tag .name{color:var(--pink)}
+
+  .price{font-weight:900;font-size:64px;line-height:1;letter-spacing:-.04em;margin-bottom:4px}
+  .price .per{font-size:14px;color:var(--muted);font-weight:500}
+
+  .divider{height:1px;background:var(--line);margin:24px 0 22px;position:relative}
+  .divider::after{
+    content:"×";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:var(--panel);padding:0 10px;
+    font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:14px;
+  }
+
+  .users{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:40px;letter-spacing:-.02em;
+    transition:color .2s ease;
+  }
+  .users-lbl{font-size:12px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+
+  .result{
+    margin-top:26px;padding-top:20px;border-top:1px dashed var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .result .k{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;letter-spacing:.15em;text-transform:uppercase}
+  .result .v{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px}
+  .a .result .v{color:var(--accent)}
+  .b .result .v{color:var(--blue)}
+  .c .result .v{color:var(--pink)}
+
+  .mrr{margin-top:14px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .mrr b{color:var(--ink);font-weight:500}
+
+  .footer{
+    margin-top:44px;padding-top:24px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--dim);letter-spacing:.12em;text-transform:uppercase;
+  }
+  .footer .dot{color:var(--accent)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Revenue Model · Interactive</div>
+    <h1>Paths to <span class="big" id="headline-target">$1M</span>.</h1>
+    <p class="sub">Drag the target. Toggle monthly vs annual. Watch the user counts shift across three pricing tiers.</p>
+
+    <div class="controls">
+      <div class="controls-row">
+        <div>
+          <div class="ctrl-label" style="margin-bottom:10px">Revenue View</div>
+          <div class="toggle" id="toggle">
+            <div class="pill" id="pill"></div>
+            <button data-mode="arr" class="active">Annual (ARR)</button>
+            <button data-mode="mrr">Monthly (MRR)</button>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="ctrl-label" style="margin-bottom:6px">Target</div>
+          <div class="target-display" style="justify-content:flex-end">
+            <div class="target-val" id="target-val">$1,000,000</div>
+            <div class="target-unit" id="target-unit">ARR</div>
+          </div>
+          <div class="equiv" id="equiv">≈ <b>$83,333</b> MRR</div>
+        </div>
+      </div>
+
+      <div class="slider-wrap">
+        <input type="range" id="slider" min="0" max="1000" value="565" step="1">
+        <div class="slider-marks" id="marks"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card a">
+        <div class="tag"><span class="name">Path A</span><span>Volume play</span></div>
+        <div class="price">$10<span class="per"> /mo</span></div>
+        <div class="divider"></div>
+        <div class="users" data-price="10">0</div>
+        <div class="users-lbl">paying users</div>
+        <div class="result">
+          <span class="k" id="k-a">ARR</span>
+          <span class="v" data-rev="10">$0</span>
+        </div>
+        <div class="mrr">prosumer / consumer</div>
+      </div>
+
+      <div class="card b">
+        <div class="tag"><span class="name">Path B</span><span>Middle ground</span></div>
+        <div class="price">$20<span class="per"> /mo</span></div>
+        <div class="divider"></div>
+        <div class="users" data-price="20">0</div>
+        <div class="users-lbl">paying users</div>
+        <div class="result">
+          <span class="k" id="k-b">ARR</span>
+          <span class="v" data-rev="20">$0</span>
+        </div>
+        <div class="mrr">power user / SMB</div>
+      </div>
+
+      <div class="card c">
+        <div class="tag"><span class="name">Path C</span><span>Premium tier</span></div>
+        <div class="price">$25<span class="per"> /mo</span></div>
+        <div class="divider"></div>
+        <div class="users" data-price="25">0</div>
+        <div class="users-lbl">paying users</div>
+        <div class="result">
+          <span class="k" id="k-c">ARR</span>
+          <span class="v" data-rev="25">$0</span>
+        </div>
+        <div class="mrr">professional / team</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Same destination <span class="dot">·</span> different GTM motion</div>
+      <div id="delta">2.5× user delta · A → C</div>
+    </div>
+  </div>
+
+<script>
+  // Log scale from $50K to $10M ARR, snapped to nice round numbers
+  const ARR_MIN = 50000, ARR_MAX = 10000000;
+  const logMin = Math.log10(ARR_MIN), logMax = Math.log10(ARR_MAX);
+
+  function sliderToArr(v){
+    const raw = Math.pow(10, logMin + (v/1000)*(logMax-logMin));
+    // Snap to a "nice" number based on magnitude
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = mag / 4; // quarter-decade snap
+    return Math.round(raw/step)*step;
+  }
+
+  const fmt = n => '$' + Math.round(n).toLocaleString('en-US');
+  const fmtUsers = n => Math.ceil(n).toLocaleString('en-US');
+
+  let mode = 'arr'; // 'arr' or 'mrr'
+  let arr = 1000000;
+
+  const slider = document.getElementById('slider');
+  const targetVal = document.getElementById('target-val');
+  const targetUnit = document.getElementById('target-unit');
+  const equiv = document.getElementById('equiv');
+  const headline = document.getElementById('headline-target');
+  const delta = document.getElementById('delta');
+
+  function render(){
+    const mrr = arr/12;
+    // Headline display
+    if(mode==='arr'){
+      targetVal.textContent = fmt(arr);
+      targetUnit.textContent = 'ARR';
+      equiv.innerHTML = '≈ <b>'+fmt(mrr)+'</b> MRR';
+    } else {
+      targetVal.textContent = fmt(mrr);
+      targetUnit.textContent = 'MRR';
+      equiv.innerHTML = '≈ <b>'+fmt(arr)+'</b> ARR';
+    }
+
+    // Compact headline
+    headline.textContent = arr >= 1e6
+      ? '$'+(arr/1e6).toFixed(arr%1e6===0?0:1)+'M'
+      : '$'+(arr/1e3).toFixed(0)+'K';
+
+    // Cards
+    document.querySelectorAll('.users').forEach(el=>{
+      const price = +el.dataset.price;
+      const users = mrr / price;
+      el.textContent = fmtUsers(users);
+    });
+    document.querySelectorAll('[data-rev]').forEach(el=>{
+      const price = +el.dataset.rev;
+      const users = Math.ceil(mrr/price);
+      const actual = mode==='arr' ? users*price*12 : users*price;
+      el.textContent = fmt(actual);
+    });
+    ['k-a','k-b','k-c'].forEach(id=>{
+      document.getElementById(id).textContent = mode.toUpperCase();
+    });
+
+    // Delta
+    const ua = Math.ceil(mrr/10), uc = Math.ceil(mrr/25);
+    delta.textContent = (ua/uc).toFixed(1)+'× user delta · A → C';
+  }
+
+  slider.addEventListener('input', e=>{
+    arr = sliderToArr(+e.target.value);
+    render();
+  });
+
+  // Toggle
+  const buttons = document.querySelectorAll('#toggle button');
+  const pill = document.getElementById('pill');
+  function positionPill(){
+    const active = document.querySelector('#toggle button.active');
+    pill.style.left = active.offsetLeft + 'px';
+    pill.style.width = active.offsetWidth + 'px';
+  }
+  buttons.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      buttons.forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      mode = b.dataset.mode;
+      positionPill();
+      render();
+    });
+  });
+
+  // Marks positioned at their true log-scale location
+  const marks = document.getElementById('marks');
+  const markVals = [
+    [50000,'$50K'],[100000,'$100K'],[250000,'$250K'],
+    [1000000,'$1M'],[3000000,'$3M'],[10000000,'$10M']
+  ];
+  markVals.forEach(([val,label])=>{
+    const pct = (Math.log10(val)-logMin)/(logMax-logMin)*100;
+    const s = document.createElement('span');
+    s.textContent = label;
+    s.style.left = pct+'%';
+    marks.appendChild(s);
+  });
+
+  // Init
+  window.addEventListener('load', ()=>{
+    positionPill();
+    render();
+  });
+  render();
+</script>
+</body>
+</html>
