@@ -201,10 +201,18 @@
   <div class="wrap">
     <div class="eyebrow">Revenue Model · Interactive</div>
     <h1>Paths to <span class="big" id="headline-target">$1M</span>.</h1>
-    <p class="sub">Drag the target. Toggle monthly vs annual. Watch the user counts shift across three pricing tiers.</p>
+    <p class="sub">Drag the target. Toggle monthly vs annual. Switch between revenue and user targets. Watch the numbers shift across three pricing tiers.</p>
 
     <div class="controls">
       <div class="controls-row">
+        <div>
+          <div class="ctrl-label" style="margin-bottom:10px">Target Mode</div>
+          <div class="toggle" id="target-toggle">
+            <div class="pill" id="target-pill"></div>
+            <button data-tmode="revenue" class="active">Revenue</button>
+            <button data-tmode="mau">MAU</button>
+          </div>
+        </div>
         <div>
           <div class="ctrl-label" style="margin-bottom:10px">Revenue View</div>
           <div class="toggle" id="toggle">
@@ -277,23 +285,38 @@
   </div>
 
 <script>
-  // Log scale from $50K to $10M ARR, snapped to nice round numbers
+  // --- Revenue log scale: $50K to $10M ARR ---
   const ARR_MIN = 50000, ARR_MAX = 10000000;
-  const logMin = Math.log10(ARR_MIN), logMax = Math.log10(ARR_MAX);
+  const logMinR = Math.log10(ARR_MIN), logMaxR = Math.log10(ARR_MAX);
+
+  // --- MAU log scale: 500 to 500,000 ---
+  const MAU_MIN = 500, MAU_MAX = 500000;
+  const logMinU = Math.log10(MAU_MIN), logMaxU = Math.log10(MAU_MAX);
 
   function sliderToArr(v){
-    const raw = Math.pow(10, logMin + (v/1000)*(logMax-logMin));
-    // Snap to a "nice" number based on magnitude
+    const raw = Math.pow(10, logMinR + (v/1000)*(logMaxR-logMinR));
     const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-    const step = mag / 4; // quarter-decade snap
+    const step = mag / 4;
+    return Math.round(raw/step)*step;
+  }
+
+  function sliderToMau(v){
+    const raw = Math.pow(10, logMinU + (v/1000)*(logMaxU-logMinU));
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = mag / 4;
     return Math.round(raw/step)*step;
   }
 
   const fmt = n => '$' + Math.round(n).toLocaleString('en-US');
   const fmtUsers = n => Math.ceil(n).toLocaleString('en-US');
+  const fmtCompact = n => n >= 1e6 ? (n/1e6).toFixed(n%1e6===0?0:1)+'M'
+                        : n >= 1e3 ? (n/1e3).toFixed(n%1e3===0?0:0)+'K'
+                        : n.toString();
 
-  let mode = 'arr'; // 'arr' or 'mrr'
+  let mode = 'arr';       // 'arr' or 'mrr'
+  let tmode = 'revenue';  // 'revenue' or 'mau'
   let arr = 1000000;
+  let mau = 10000;
 
   const slider = document.getElementById('slider');
   const targetVal = document.getElementById('target-val');
@@ -302,51 +325,109 @@
   const headline = document.getElementById('headline-target');
   const delta = document.getElementById('delta');
 
+  const revMarkVals = [
+    [50000,'$50K'],[100000,'$100K'],[250000,'$250K'],
+    [1000000,'$1M'],[3000000,'$3M'],[10000000,'$10M']
+  ];
+  const mauMarkVals = [
+    [500,'500'],[1000,'1K'],[5000,'5K'],
+    [10000,'10K'],[50000,'50K'],[500000,'500K']
+  ];
+
+  function buildMarks(){
+    const marks = document.getElementById('marks');
+    marks.innerHTML = '';
+    const vals = tmode==='revenue' ? revMarkVals : mauMarkVals;
+    const lMin = tmode==='revenue' ? logMinR : logMinU;
+    const lMax = tmode==='revenue' ? logMaxR : logMaxU;
+    vals.forEach(([val,label])=>{
+      const pct = (Math.log10(val)-lMin)/(lMax-lMin)*100;
+      const s = document.createElement('span');
+      s.textContent = label;
+      s.style.left = pct+'%';
+      marks.appendChild(s);
+    });
+  }
+
   function render(){
-    const mrr = arr/12;
-    // Headline display
-    if(mode==='arr'){
-      targetVal.textContent = fmt(arr);
-      targetUnit.textContent = 'ARR';
-      equiv.innerHTML = '≈ <b>'+fmt(mrr)+'</b> MRR';
+    if(tmode==='revenue'){
+      // --- Revenue target mode (original) ---
+      const mrr = arr/12;
+      if(mode==='arr'){
+        targetVal.textContent = fmt(arr);
+        targetUnit.textContent = 'ARR';
+        equiv.innerHTML = '≈ <b>'+fmt(mrr)+'</b> MRR';
+      } else {
+        targetVal.textContent = fmt(mrr);
+        targetUnit.textContent = 'MRR';
+        equiv.innerHTML = '≈ <b>'+fmt(arr)+'</b> ARR';
+      }
+      headline.textContent = '$'+fmtCompact(arr);
+
+      document.querySelectorAll('.users').forEach(el=>{
+        const price = +el.dataset.price;
+        el.textContent = fmtUsers(mrr / price);
+      });
+      document.querySelectorAll('.users-lbl').forEach(el=>{
+        el.textContent = 'paying users needed';
+      });
+      document.querySelectorAll('[data-rev]').forEach(el=>{
+        const price = +el.dataset.rev;
+        const users = Math.ceil(mrr/price);
+        const actual = mode==='arr' ? users*price*12 : users*price;
+        el.textContent = fmt(actual);
+      });
+      ['k-a','k-b','k-c'].forEach(id=>{
+        document.getElementById(id).textContent = mode.toUpperCase();
+      });
+
+      const ua = Math.ceil(mrr/10), uc = Math.ceil(mrr/25);
+      delta.textContent = (ua/uc).toFixed(1)+'× user delta · A → C';
+
     } else {
-      targetVal.textContent = fmt(mrr);
-      targetUnit.textContent = 'MRR';
-      equiv.innerHTML = '≈ <b>'+fmt(arr)+'</b> ARR';
+      // --- MAU target mode ---
+      targetVal.textContent = fmtUsers(mau);
+      targetUnit.textContent = 'MAU';
+      const mrrA = mau*10, mrrB = mau*20, mrrC = mau*25;
+      const arrA = mrrA*12, arrB = mrrB*12, arrC = mrrC*12;
+      if(mode==='arr'){
+        equiv.innerHTML = 'Revenue at <b>$10/mo</b>: '+fmt(arrA)+' ARR';
+      } else {
+        equiv.innerHTML = 'Revenue at <b>$10/mo</b>: '+fmt(mrrA)+' MRR';
+      }
+      headline.textContent = fmtCompact(mau)+' users';
+
+      document.querySelectorAll('.users').forEach(el=>{
+        el.textContent = fmtUsers(mau);
+      });
+      document.querySelectorAll('.users-lbl').forEach(el=>{
+        el.textContent = 'monthly active users';
+      });
+      document.querySelectorAll('[data-rev]').forEach(el=>{
+        const price = +el.dataset.rev;
+        const rev = mode==='arr' ? mau*price*12 : mau*price;
+        el.textContent = fmt(rev);
+      });
+      ['k-a','k-b','k-c'].forEach(id=>{
+        document.getElementById(id).textContent = mode.toUpperCase();
+      });
+
+      const revA = mode==='arr' ? arrA : mrrA;
+      const revC = mode==='arr' ? arrC : mrrC;
+      delta.textContent = (revC/revA).toFixed(1)+'× revenue delta · C vs A';
     }
-
-    // Compact headline
-    headline.textContent = arr >= 1e6
-      ? '$'+(arr/1e6).toFixed(arr%1e6===0?0:1)+'M'
-      : '$'+(arr/1e3).toFixed(0)+'K';
-
-    // Cards
-    document.querySelectorAll('.users').forEach(el=>{
-      const price = +el.dataset.price;
-      const users = mrr / price;
-      el.textContent = fmtUsers(users);
-    });
-    document.querySelectorAll('[data-rev]').forEach(el=>{
-      const price = +el.dataset.rev;
-      const users = Math.ceil(mrr/price);
-      const actual = mode==='arr' ? users*price*12 : users*price;
-      el.textContent = fmt(actual);
-    });
-    ['k-a','k-b','k-c'].forEach(id=>{
-      document.getElementById(id).textContent = mode.toUpperCase();
-    });
-
-    // Delta
-    const ua = Math.ceil(mrr/10), uc = Math.ceil(mrr/25);
-    delta.textContent = (ua/uc).toFixed(1)+'× user delta · A → C';
   }
 
   slider.addEventListener('input', e=>{
-    arr = sliderToArr(+e.target.value);
+    if(tmode==='revenue'){
+      arr = sliderToArr(+e.target.value);
+    } else {
+      mau = sliderToMau(+e.target.value);
+    }
     render();
   });
 
-  // Toggle
+  // Revenue view toggle (ARR / MRR)
   const buttons = document.querySelectorAll('#toggle button');
   const pill = document.getElementById('pill');
   function positionPill(){
@@ -364,23 +445,34 @@
     });
   });
 
-  // Marks positioned at their true log-scale location
-  const marks = document.getElementById('marks');
-  const markVals = [
-    [50000,'$50K'],[100000,'$100K'],[250000,'$250K'],
-    [1000000,'$1M'],[3000000,'$3M'],[10000000,'$10M']
-  ];
-  markVals.forEach(([val,label])=>{
-    const pct = (Math.log10(val)-logMin)/(logMax-logMin)*100;
-    const s = document.createElement('span');
-    s.textContent = label;
-    s.style.left = pct+'%';
-    marks.appendChild(s);
+  // Target mode toggle (Revenue / MAU)
+  const tButtons = document.querySelectorAll('#target-toggle button');
+  const tPill = document.getElementById('target-pill');
+  function positionTargetPill(){
+    const active = document.querySelector('#target-toggle button.active');
+    tPill.style.left = active.offsetLeft + 'px';
+    tPill.style.width = active.offsetWidth + 'px';
+  }
+  tButtons.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      tButtons.forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      tmode = b.dataset.tmode;
+      positionTargetPill();
+      // Reset slider to midpoint for new scale
+      slider.value = 565;
+      if(tmode==='revenue') arr = sliderToArr(565);
+      else mau = sliderToMau(565);
+      buildMarks();
+      render();
+    });
   });
 
   // Init
+  buildMarks();
   window.addEventListener('load', ()=>{
     positionPill();
+    positionTargetPill();
     render();
   });
   render();
