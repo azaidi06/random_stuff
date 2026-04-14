@@ -18,6 +18,7 @@
     --accent:#ff8a1f;
     --blue:#7dd3fc;
     --pink:#f0abfc;
+    --green:#4ade80;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
@@ -98,6 +99,13 @@
     font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);
   }
   .equiv b{color:var(--muted);font-weight:500}
+
+  .market-ctx{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);
+    margin-top:6px;opacity:.8;
+    transition:opacity .3s ease;
+  }
+  .market-ctx .dim{color:var(--dim);font-weight:400}
 
   .slider-wrap{margin-top:18px}
   input[type=range]{
@@ -225,6 +233,7 @@
   .bench.saas{border-left:3px solid var(--accent)}
   .bench.consumer{border-left:3px solid var(--blue)}
   .bench.cohort{border-left:3px solid var(--pink)}
+  .bench.market{border-left:3px solid var(--green)}
   .bench-left{
     display:flex;align-items:center;gap:12px;
     padding:14px 16px;flex:1;min-width:0;
@@ -238,6 +247,7 @@
   .bench.saas .bench-icon{background:rgba(255,138,31,.12);color:var(--accent)}
   .bench.consumer .bench-icon{background:rgba(125,211,252,.12);color:var(--blue)}
   .bench.cohort .bench-icon{background:rgba(240,171,252,.12);color:var(--pink)}
+  .bench.market .bench-icon{background:rgba(74,222,128,.12);color:var(--green)}
   .bench-info{min-width:0;flex:1}
   .bench-name{
     font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
@@ -260,6 +270,7 @@
   .bench.saas .bench-metric{color:var(--accent)}
   .bench.consumer .bench-metric{color:var(--blue)}
   .bench.cohort .bench-metric{color:var(--pink)}
+  .bench.market .bench-metric{color:var(--green)}
   .bench-raised{
     font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
     color:var(--ink);text-align:right;white-space:nowrap;margin-top:6px;
@@ -313,6 +324,7 @@
   .bench-popover.saas .bench-popover-icon{background:rgba(255,138,31,.15);color:var(--accent)}
   .bench-popover.consumer .bench-popover-icon{background:rgba(125,211,252,.15);color:var(--blue)}
   .bench-popover.cohort .bench-popover-icon{background:rgba(240,171,252,.15);color:var(--pink)}
+  .bench-popover.market .bench-popover-icon{background:rgba(74,222,128,.15);color:var(--green)}
   .bench-popover-title{
     font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;
     letter-spacing:.02em;
@@ -341,6 +353,7 @@
   .bench-popover.saas .bench-popover-metric-val{color:var(--accent)}
   .bench-popover.consumer .bench-popover-metric-val{color:var(--blue)}
   .bench-popover.cohort .bench-popover-metric-val{color:var(--pink)}
+  .bench-popover.market .bench-popover-metric-val{color:var(--green)}
   .bench-popover-context{
     font-size:13px;line-height:1.6;color:var(--muted);
     margin-bottom:16px;
@@ -396,6 +409,7 @@
             <div class="target-unit" id="target-unit">ARR</div>
           </div>
           <div class="equiv" id="equiv">≈ <b>$83,333</b> MRR</div>
+          <div class="market-ctx" id="market-ctx"></div>
         </div>
       </div>
 
@@ -489,6 +503,23 @@
                         : n >= 1e3 ? (n/1e3).toFixed(n%1e3===0?0:0)+'K'
                         : n.toString();
 
+  // =========================================================
+  //  GOLF MARKET TAM (verified Apr 2026)
+  // =========================================================
+  const GOLF = {
+    coursesWorld: 38081,           // R&A / NGF 2024 — worldwide courses
+    coursesUS: 16156,              // NGF — US courses
+    onCourseUS: 29100000,          // NGF 2025 — US on-course golfers
+    offCourseUS: 19000000,         // NGF 2025 — US off-course only
+    totalUS: 48100000,             // NGF 2025 — total US golf participants
+    onCourseGlobal: 43300000,      // R&A 2024 — on-course (excl. US/Mexico)
+    totalGlobalRA: 108000000,      // R&A 2024 — all formats (excl. US/Mexico)
+    topgolfVenues: 101,            // Jan 2026 — US locations
+    topgolfVisitors: 30000000,     // ~30M unique visitors/year (2024 est.)
+    topgolfNonGolfer: 0.51,        // 51% of attendance from non-golfers
+    techTAM: 150000000,            // Golf swing analysis software TAM 2025
+  };
+
   let mode = 'arr';       // 'arr' or 'mrr'
   let tmode = 'revenue';  // 'revenue' or 'mau'
   let arr = 1000000;
@@ -500,6 +531,7 @@
   const equiv = document.getElementById('equiv');
   const headline = document.getElementById('headline-target');
   const delta = document.getElementById('delta');
+  const marketCtx = document.getElementById('market-ctx');
 
   // =========================================================
   //  BENCHMARK DATA
@@ -555,6 +587,25 @@
       funding:'~$4M raised \u00b7 bought back investors',
       context:'190K MAU \u00b7 ~$10/user \u00b7 open startup',
       detail:'The gold standard for transparent metrics. Hit $2M MRR in December 2025 (all-time high) with $22.5M annual revenue, 190K+ MAUs, and ~68K paid subscribers. Originally raised ~$4M but bought out Series A investors for $3.3M in 2018, making them effectively bootstrapped and independent. Publishes monthly shareholder reports. Source: buffer.com/open, shareholder updates.' },
+    // --- Golf market reference benchmarks (MAU-mode only: mrr is null) ---
+    { name:'0.1% US On-Course Golfers', type:'market', icon:'\u26f3',
+      mrr:null, mau:29100,
+      stage:'TAM Ref', raised:'\u2014', valuation:null,
+      funding:'29.1M total \u00b7 NGF 2025',
+      context:'0.1% of US on-course market',
+      detail:'The US has 29.1M on-course golfers (NGF 2025). Capturing just 0.1% = 29,100 users. At $10\u2013$25/mo pricing, that represents $3.5M\u2013$8.7M ARR. An additional 19M Americans participate exclusively off-course (driving ranges, simulators, Topgolf), bringing total US golf participation to 48.1M.' },
+    { name:'1% US On-Course Golfers', type:'market', icon:'\u26f3',
+      mrr:null, mau:291000,
+      stage:'TAM Ref', raised:'\u2014', valuation:null,
+      funding:'29.1M total \u00b7 NGF 2025',
+      context:'1% of US on-course market',
+      detail:'Capturing 1% of the 29.1M US on-course golfer market = 291,000 users. At $10\u2013$25/mo, that\u2019s $35M\u2013$87M ARR\u2014a unicorn-scale outcome from golf alone. For context, global on-course play is 72M+ (43.3M in R&A markets + US), and total participation including off-course formats exceeds 156M worldwide.' },
+    { name:'Topgolf Visitor Scale', type:'market', icon:'TG',
+      mrr:null, mau:2500000,
+      stage:'Comparator', raised:'\u2014', valuation:null,
+      funding:'101 US venues \u00b7 ~30M visitors/yr',
+      context:'~2.5M visitors/month \u00b7 51% non-golfers',
+      detail:'Topgolf draws ~30M unique visitors/year across 101 US venues (~2.5M/month), with 51% being non-golfers\u2014proving golf-adjacent experiences reach far beyond traditional players. Each new venue adds 3\u20134M unique visitors/year. Topgolf charges a $5 one-time membership, with Platinum subscriptions at ~$100/mo. Source: Topgolf Callaway filings, NGF.' },
   ];
 
   // Consumer / MAU-focused stage bands
@@ -672,9 +723,10 @@
         }
         if(dist > PROXIMITY) return null;
         const opacity = 1 - (dist / PROXIMITY) * 0.7;
-        const metricLabel = b.mau
-          ? fmtUsers(b.mau)+' MAU · '+fmt(b.mrr)+' MRR'
-          : fmt(b.mrr)+' MRR';
+        let metricLabel;
+        if(b.mau && b.mrr) metricLabel = fmtUsers(b.mau)+' MAU \u00b7 '+fmt(b.mrr)+' MRR';
+        else if(b.mau) metricLabel = fmtUsers(b.mau)+' MAU';
+        else metricLabel = fmt(b.mrr)+' MRR';
         return { ...b, dist, opacity, metricLabel };
       }).filter(Boolean);
     }
@@ -787,7 +839,22 @@
       delta.textContent = (revC/revA).toFixed(1)+'× revenue delta · C vs A';
     }
 
+    // Golf market context line
+    renderMarketCtx();
     renderBenchmarks();
+  }
+
+  function renderMarketCtx(){
+    const fmtPct = p => p < 0.01 ? '< 0.01%' : p < 1 ? p.toFixed(2)+'%' : p.toFixed(1)+'%';
+    if(tmode==='revenue'){
+      const pctTAM = (arr / GOLF.techTAM) * 100;
+      marketCtx.innerHTML = '\u26f3 '+fmtPct(pctTAM)+' <span class="dim">of $150M golf tech software TAM</span>';
+    } else {
+      const pctOnCourse = (mau / GOLF.onCourseUS) * 100;
+      const pctTotal = (mau / GOLF.totalUS) * 100;
+      marketCtx.innerHTML = '\u26f3 '+fmtPct(pctOnCourse)+' <span class="dim">of 29.1M US on-course</span> · '
+        +fmtPct(pctTotal)+' <span class="dim">of 48.1M total US golfers</span>';
+    }
   }
 
   // =========================================================
