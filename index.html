@@ -101,11 +101,88 @@
   .equiv b{color:var(--muted);font-weight:500}
 
   .market-ctx{
-    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);
-    margin-top:6px;opacity:.8;
-    transition:opacity .3s ease;
+    margin-top:10px;
   }
-  .market-ctx .dim{color:var(--dim);font-weight:400}
+  .market-ctx-label{
+    font-family:'JetBrains Mono',monospace;font-size:9px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    margin-bottom:6px;
+  }
+  .tam-bar{
+    display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;
+    margin-bottom:5px;
+  }
+  .tam-seg{
+    height:100%;border-radius:3px;position:relative;cursor:pointer;
+    transition:opacity .2s ease, filter .2s ease;
+    min-width:3px;
+  }
+  .tam-seg:hover{filter:brightness(1.4)}
+  .tam-seg.on-course{background:#4ade80}
+  .tam-seg.off-course{background:#facc15}
+  .tam-seg.topgolf{background:#f97316}
+  .tam-legend{
+    display:flex;gap:14px;flex-wrap:wrap;
+  }
+  .tam-leg{
+    display:flex;align-items:center;gap:5px;cursor:pointer;
+    transition:opacity .2s ease;
+  }
+  .tam-leg:hover{opacity:1 !important}
+  .tam-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .tam-dot.on-course{background:#4ade80}
+  .tam-dot.off-course{background:#facc15}
+  .tam-dot.topgolf{background:#f97316}
+  .tam-leg-text{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
+    letter-spacing:.05em;
+  }
+  .tam-leg-pct{
+    font-weight:700;
+  }
+  .tam-leg-pct.on-course{color:#4ade80}
+  .tam-leg-pct.off-course{color:#facc15}
+  .tam-leg-pct.topgolf{color:#f97316}
+
+  /* TAM detail popover */
+  .tam-popover{
+    position:fixed;z-index:1001;
+    width:340px;max-width:90vw;
+    background:#15171c;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    pointer-events:none;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity .18s ease, transform .18s ease;
+    box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 1px rgba(255,255,255,.08);
+  }
+  .tam-popover.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+  .tam-popover-title{
+    font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
+    margin-bottom:4px;
+  }
+  .tam-popover-title.on-course{color:#4ade80}
+  .tam-popover-title.off-course{color:#facc15}
+  .tam-popover-title.topgolf{color:#f97316}
+  .tam-popover-big{
+    font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+    color:var(--ink);margin-bottom:10px;
+  }
+  .tam-popover-rows{
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .tam-popover-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+  }
+  .tam-popover-row .k{color:var(--dim);letter-spacing:.08em}
+  .tam-popover-row .v{color:var(--muted);font-weight:500}
+  .tam-popover-note{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);
+    margin-top:10px;line-height:1.5;letter-spacing:.03em;
+  }
 
   .slider-wrap{margin-top:18px}
   input[type=range]{
@@ -409,9 +486,15 @@
             <div class="target-unit" id="target-unit">ARR</div>
           </div>
           <div class="equiv" id="equiv">≈ <b>$83,333</b> MRR</div>
-          <div class="market-ctx" id="market-ctx"></div>
+          <div class="market-ctx" id="market-ctx">
+            <div class="market-ctx-label">Golf TAM penetration</div>
+            <div class="tam-bar" id="tam-bar"></div>
+            <div class="tam-legend" id="tam-legend"></div>
+          </div>
         </div>
       </div>
+
+      <div class="tam-popover" id="tam-popover"></div>
 
       <div class="slider-wrap">
         <input type="range" id="slider" min="0" max="1000" value="565" step="1">
@@ -844,18 +927,146 @@
     renderBenchmarks();
   }
 
+  // =========================================================
+  //  GOLF TAM BREAKDOWN
+  // =========================================================
+  const tamBar = document.getElementById('tam-bar');
+  const tamLegend = document.getElementById('tam-legend');
+  const tamPopover = document.getElementById('tam-popover');
+  let tamPopoverTimeout;
+
+  // Three golf market segments with their data
+  const TAM_SEGMENTS = [
+    { key:'on-course', label:'On-Course (9/18 holes)',
+      us: 29100000, global: 43300000, globalNote:'R&A markets only, excl. US/Mexico',
+      source:'NGF 2025 / R&A 2024',
+      desc:'People who played 9 or 18 holes on a golf course. Includes 8M+ female golfers and ~4M juniors (US). 3M+ new on-course beginners every year since 2020.',
+      revenueNote:'At $10\u2013$25/mo, 1% penetration (291K users) = $35M\u2013$87M ARR' },
+    { key:'off-course', label:'Off-Course / Range',
+      us: 19000000, global: null, globalNote:'US data only (NGF)',
+      source:'NGF 2025',
+      desc:'People who participated exclusively in off-course golf: driving ranges, indoor simulators, and golf entertainment venues. Does NOT overlap with on-course count\u2014these are people who only played off-course. 18% growth in 2023 alone.',
+      revenueNote:'At $10\u2013$25/mo, 1% penetration (190K users) = $23M\u2013$57M ARR' },
+    { key:'topgolf', label:'Topgolf Visitors',
+      us: 30000000, global: null, globalNote:'101 US venues (Jan 2026)',
+      source:'Topgolf Callaway filings',
+      desc:'~30M unique visitors/year across 101 US venues. 51% are non-golfers\u2014Topgolf reaches well beyond traditional golfers. Each new venue adds 3\u20134M unique visitors/year. Note: overlaps with off-course count.',
+      revenueNote:'Topgolf charges $5 one-time membership; Platinum is ~$100/mo' },
+  ];
+
   function renderMarketCtx(){
-    const fmtPct = p => p < 0.01 ? '< 0.01%' : p < 1 ? p.toFixed(2)+'%' : p.toFixed(1)+'%';
+    tamBar.innerHTML = '';
+    tamLegend.innerHTML = '';
+
+    const fmtPct = p => p < 0.01 ? '<0.01%' : p < 1 ? p.toFixed(2)+'%' : p.toFixed(1)+'%';
+    const fmtM = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : (n/1e3).toFixed(0)+'K';
+
+    // Determine the value to compare against each segment
+    let currentVal;
     if(tmode==='revenue'){
-      const pctTAM = (arr / GOLF.techTAM) * 100;
-      marketCtx.innerHTML = '\u26f3 '+fmtPct(pctTAM)+' <span class="dim">of $150M golf tech software TAM</span>';
+      // In revenue mode: compute implied users at $15/mo midpoint
+      currentVal = (arr / 12) / 15;
     } else {
-      const pctOnCourse = (mau / GOLF.onCourseUS) * 100;
-      const pctTotal = (mau / GOLF.totalUS) * 100;
-      marketCtx.innerHTML = '\u26f3 '+fmtPct(pctOnCourse)+' <span class="dim">of 29.1M US on-course</span> · '
-        +fmtPct(pctTotal)+' <span class="dim">of 48.1M total US golfers</span>';
+      currentVal = mau;
     }
+
+    // Total addressable = on-course + off-course (Topgolf overlaps with off-course)
+    const totalNonOverlap = GOLF.onCourseUS + GOLF.offCourseUS; // 48.1M
+
+    TAM_SEGMENTS.forEach(seg => {
+      const segTotal = seg.us;
+      const pct = (currentVal / segTotal) * 100;
+      const barWidth = (segTotal / totalNonOverlap) * 100;
+
+      // Bar segment
+      const bar = document.createElement('div');
+      bar.className = 'tam-seg ' + seg.key;
+      // For topgolf, it overlaps off-course so show it as a thinner overlay-style bar
+      if(seg.key === 'topgolf'){
+        bar.style.width = Math.min(barWidth, 40)+'%';
+        bar.style.opacity = '0.6';
+      } else {
+        bar.style.width = barWidth+'%';
+      }
+      bar.addEventListener('mouseenter', e => showTamPopover(e, seg, currentVal, pct));
+      bar.addEventListener('mouseleave', hideTamPopover);
+      tamBar.appendChild(bar);
+
+      // Legend entry
+      const leg = document.createElement('div');
+      leg.className = 'tam-leg';
+      leg.style.opacity = pct > 0.001 ? '1' : '0.5';
+      leg.innerHTML = `
+        <div class="tam-dot ${seg.key}"></div>
+        <span class="tam-leg-text">
+          <span class="tam-leg-pct ${seg.key}">${fmtPct(pct)}</span>
+          of ${fmtM(segTotal)} ${seg.key==='topgolf'?'visitors':seg.key==='off-course'?'range/sim':'golfers'}
+        </span>
+      `;
+      leg.addEventListener('mouseenter', e => showTamPopover(e, seg, currentVal, pct));
+      leg.addEventListener('mouseleave', hideTamPopover);
+      tamLegend.appendChild(leg);
+    });
   }
+
+  function showTamPopover(e, seg, currentVal, pct){
+    clearTimeout(tamPopoverTimeout);
+    const fmtPct = p => p < 0.01 ? '<0.01%' : p < 1 ? p.toFixed(2)+'%' : p.toFixed(1)+'%';
+    const fmtM = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : Math.round(n).toLocaleString();
+    const captured = Math.round(currentVal);
+
+    let globalRow = '';
+    if(seg.global){
+      const gPct = (currentVal / seg.global) * 100;
+      globalRow = `<div class="tam-popover-row"><span class="k">Global (R&A)</span><span class="v">${fmtPct(gPct)} of ${fmtM(seg.global)}</span></div>`;
+    }
+
+    let revenueRows = '';
+    if(tmode==='mau'){
+      const lo = captured * 10 * 12, hi = captured * 25 * 12;
+      revenueRows = `<div class="tam-popover-row"><span class="k">At $10/mo</span><span class="v">${'$'+Math.round(lo).toLocaleString()} ARR</span></div>
+        <div class="tam-popover-row"><span class="k">At $25/mo</span><span class="v">${'$'+Math.round(hi).toLocaleString()} ARR</span></div>`;
+    }
+
+    tamPopover.innerHTML = `
+      <div class="tam-popover-title ${seg.key}">${seg.label}</div>
+      <div class="tam-popover-big">${fmtM(seg.us)} <span style="font-size:13px;color:var(--dim)">US ${seg.key==='topgolf'?'visitors/yr':'participants'}</span></div>
+      <div class="tam-popover-rows">
+        <div class="tam-popover-row"><span class="k">Your target</span><span class="v">${fmtM(captured)} users</span></div>
+        <div class="tam-popover-row"><span class="k">Penetration (US)</span><span class="v">${fmtPct(pct)}</span></div>
+        ${globalRow}
+        ${revenueRows}
+      </div>
+      <div class="tam-popover-note">${seg.desc}</div>
+      <div class="tam-popover-note" style="margin-top:6px;color:var(--muted)">${seg.revenueNote}</div>
+      <div class="tam-popover-note" style="margin-top:4px;opacity:.6">Source: ${seg.source}</div>
+    `;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    tamPopover.style.visibility = 'hidden';
+    tamPopover.classList.add('visible');
+
+    requestAnimationFrame(()=>{
+      const pw = tamPopover.offsetWidth;
+      const ph = tamPopover.offsetHeight;
+      let left = rect.left + rect.width/2 - pw/2;
+      let top = rect.bottom + 10;
+      if(top + ph > window.innerHeight - 8) top = rect.top - ph - 10;
+      if(left < 8) left = 8;
+      if(left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+      tamPopover.style.left = left+'px';
+      tamPopover.style.top = top+'px';
+      tamPopover.style.visibility = '';
+    });
+  }
+
+  function hideTamPopover(){
+    tamPopoverTimeout = setTimeout(()=>{
+      tamPopover.classList.remove('visible');
+    }, 120);
+  }
+  tamPopover.addEventListener('mouseenter', ()=> clearTimeout(tamPopoverTimeout));
+  tamPopover.addEventListener('mouseleave', hideTamPopover);
 
   // =========================================================
   //  EVENT HANDLERS
