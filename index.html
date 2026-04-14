@@ -1003,7 +1003,7 @@
         <div class="tam-dot ${seg.key}"></div>
         <span class="tam-leg-text">
           <span class="tam-leg-pct ${seg.key}">${fmtPct(pct)}</span>
-          of ${fmtM(segTotal)} ${seg.key==='topgolf'?'visitors':seg.key==='off-course'?'range/sim':'golfers'}
+          of ${fmtM(segTotal)} ${seg.key==='topgolf'?'Topgolf visitors':seg.key==='off-course'?'range & simulator golfers':'on-course golfers'}
         </span>
       `;
       leg.addEventListener('mouseenter', e => showTamPopover(e, seg, currentVal, pct));
