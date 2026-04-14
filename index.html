@@ -101,44 +101,46 @@
   .equiv b{color:var(--muted);font-weight:500}
 
   .market-ctx{
-    margin-top:10px;
+    margin-top:22px;padding-top:20px;
+    border-top:1px solid var(--line);
   }
   .market-ctx-label{
-    font-family:'JetBrains Mono',monospace;font-size:9px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;
     letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
-    margin-bottom:6px;
+    margin-bottom:12px;
   }
   .tam-bar{
-    display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;
-    margin-bottom:5px;
+    display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;
+    margin-bottom:14px;
   }
   .tam-seg{
-    height:100%;border-radius:3px;position:relative;cursor:pointer;
+    height:100%;border-radius:6px;position:relative;cursor:pointer;
     transition:opacity .2s ease, filter .2s ease;
-    min-width:3px;
+    min-width:4px;
   }
   .tam-seg:hover{filter:brightness(1.4)}
   .tam-seg.on-course{background:#4ade80}
   .tam-seg.off-course{background:#facc15}
   .tam-seg.topgolf{background:#f97316}
   .tam-legend{
-    display:flex;gap:14px;flex-wrap:wrap;
+    display:flex;gap:24px;flex-wrap:wrap;
   }
   .tam-leg{
-    display:flex;align-items:center;gap:5px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;cursor:pointer;
+    padding:6px 0;
     transition:opacity .2s ease;
   }
   .tam-leg:hover{opacity:1 !important}
-  .tam-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .tam-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
   .tam-dot.on-course{background:#4ade80}
   .tam-dot.off-course{background:#facc15}
   .tam-dot.topgolf{background:#f97316}
   .tam-leg-text{
-    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
-    letter-spacing:.05em;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);
+    letter-spacing:.04em;
   }
   .tam-leg-pct{
-    font-weight:700;
+    font-weight:700;font-size:13px;
   }
   .tam-leg-pct.on-course{color:#4ade80}
   .tam-leg-pct.off-course{color:#facc15}
@@ -486,22 +488,23 @@
             <div class="target-unit" id="target-unit">ARR</div>
           </div>
           <div class="equiv" id="equiv">≈ <b>$83,333</b> MRR</div>
-          <div class="market-ctx" id="market-ctx">
-            <div class="market-ctx-label">Golf TAM penetration</div>
-            <div class="tam-bar" id="tam-bar"></div>
-            <div class="tam-legend" id="tam-legend"></div>
-          </div>
         </div>
       </div>
-
-      <div class="tam-popover" id="tam-popover"></div>
 
       <div class="slider-wrap">
         <input type="range" id="slider" min="0" max="1000" value="565" step="1">
         <div class="slider-marks" id="marks"></div>
         <div class="stage-bands-wrap" id="stage-bands-wrap"></div>
       </div>
+
+      <div class="market-ctx" id="market-ctx">
+        <div class="market-ctx-label">Golf TAM penetration</div>
+        <div class="tam-bar" id="tam-bar"></div>
+        <div class="tam-legend" id="tam-legend"></div>
+      </div>
     </div>
+
+    <div class="tam-popover" id="tam-popover"></div>
 
     <div class="benchmarks" id="benchmarks">
       <div class="bench-strip-label" id="bench-label">Nearby benchmarks</div>
